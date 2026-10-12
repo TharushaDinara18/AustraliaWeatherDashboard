@@ -1,10 +1,118 @@
 ﻿@page
 @model IndexModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Weather Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="text-center mb-4">
+    <h1>Australian Weather Dashboard</h1>
+    <p class="text-muted">
+        Daily forecasts retrieved from Open-Meteo
+    </p>
 </div>
+
+<form method="get" class="row g-3 mb-4 align-items-end">
+    <div class="col-md-5">
+        <label asp-for="SelectedLocation" class="form-label">
+            Australian city
+        </label>
+
+        <select asp-for="SelectedLocation"
+                asp-items="@(new SelectList(Model.Locations))"
+                class="form-select">
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="SelectedDate" class="form-label">
+            Forecast date
+        </label>
+
+        <select asp-for="SelectedDate"
+                asp-items="Model.DateOptions"
+                class="form-select">
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <button type="submit" class="btn btn-primary w-100">
+            Get forecast
+        </button>
+    </div>
+</form>
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        @Model.ErrorMessage
+    </div>
+}
+
+@if (Model.Forecast is { } forecast)
+{
+    <div class="text-center mb-4">
+        <h2>@forecast.Location</h2>
+        <p>@forecast.Date.ToString("dddd, dd MMMM yyyy")</p>
+        <p class="text-muted">
+            Location time zone: @Model.ForecastTimeZone
+        </p>
+    </div>
+
+    <div class="row g-3 text-center">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h3 class="h5">Minimum temperature</h3>
+                    <p class="display-6 mb-0">
+                        @forecast.MinimumTemperatureC.ToString("0.0") °C
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h3 class="h5">Maximum temperature</h3>
+                    <p class="display-6 mb-0">
+                        @forecast.MaximumTemperatureC.ToString("0.0") °C
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h3 class="h5">Average humidity</h3>
+                    <p class="display-6 mb-0">
+                        @forecast.AverageHumidityPercent.ToString("0.0")%
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h3 class="h5">Forecast rainfall</h3>
+                    <p class="display-6 mb-0">
+                        @forecast.RainfallMm.ToString("0.0") mm
+                    </p>
+                    <small class="text-muted">
+                        Includes rain and showers
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<p class="text-center text-muted mt-4">
+    Weather data by
+    <a href="https://open-meteo.com/" target="_blank"
+       rel="noopener noreferrer">Open-Meteo</a>.
+    Values are forecasts, not observed measurements.
+</p>
