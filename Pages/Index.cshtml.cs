@@ -1,3 +1,4 @@
+using AustraliaWeatherDashboard.Models;
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
@@ -6,13 +7,6 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace AustraliaWeatherDashboard.Pages;
 
-public sealed record DailyForecast(
-    string Location,
-    DateOnly Date,
-    double MinimumTemperatureC,
-    double MaximumTemperatureC,
-    double AverageHumidityPercent,
-    double RainfallMm);
 
 public class IndexModel : PageModel
 {
