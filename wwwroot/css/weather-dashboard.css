@@ -1,0 +1,106 @@
+/* Use dark browser controls */
+:root {
+    color-scheme: dark;
+}
+
+/* Page background and text */
+body {
+    background-color: #0d0d0d;
+    color: #f2f2f2;
+}
+
+/* Space above the dashboard */
+main {
+    padding-top: 32px;
+}
+
+.forecast-city {
+    font-size: 48px;
+    font-weight: 600;
+}
+
+.forecast-date {
+    font-size: 24px;
+}
+
+/* City and date dropdowns */
+.form-select {
+    background-color: #242424;
+    color: #f2f2f2;
+    border-color: #505050;
+    background-image: none;
+    appearance: auto;
+}
+
+.form-select:focus {
+    background-color: #242424;
+    color: #ffffff;
+    border-color: #aaaaaa;
+    box-shadow: 0 0 0 3px rgb(255 255 255 / 12%);
+}
+
+.form-select option {
+    background-color: #242424;
+    color: #f2f2f2;
+}
+
+.forecast-summary {
+    padding-top: 20px;
+}
+
+/* Forecast cards */
+.card {
+    background-color: #222222;
+    color: #f2f2f2;
+    border-color: #3d3d3d;
+}
+
+.card h3 {
+    color: #eeeeee;
+}
+
+/* Supporting text */
+.text-muted {
+    color: #b5b5b5 !important;
+}
+
+/* Links */
+a {
+    color: #cccccc;
+}
+
+a:hover {
+    color: #ffffff;
+}
+
+/* Keep the forecast button blue */
+.btn-primary {
+    --bs-btn-color: #ffffff;
+    --bs-btn-bg: #0d6efd;
+    --bs-btn-border-color: #0d6efd;
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-hover-bg: #0b5ed7;
+    --bs-btn-hover-border-color: #0a58ca;
+    --bs-btn-active-color: #ffffff;
+    --bs-btn-active-bg: #0a58ca;
+    --bs-btn-active-border-color: #0a53be;
+    --bs-btn-focus-shadow-rgb: 49, 132, 253;
+}
+
+.card .display-6 {
+    color: #7dd3fc;
+}
+
+/* Error messages */
+.alert-danger {
+    background-color: #292929;
+    color: #ffffff;
+    border-color: #777777;
+}
+
+/* Footer */
+.footer {
+    background-color: #0d0d0d;
+    color: #b5b5b5 !important;
+    border-color: #333333 !important;
+}
