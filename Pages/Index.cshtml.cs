@@ -1,34 +1,33 @@
-using AustraliaWeatherDashboard.Models;
 using System.Globalization;
-using System.Text.Json;
+using System.Net;
+using AustraliaWeatherDashboard.Models;
+using AustraliaWeatherDashboard.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace AustraliaWeatherDashboard.Pages;
 
-
 public class IndexModel : PageModel
 {
-    private static readonly HttpClient Client = new()
+    private static readonly Dictionary<
+        string, (string Lat, string Lon, string TimeZone)> Cities = new()
     {
-        Timeout = TimeSpan.FromSeconds(20)
+        ["Perth"] = ("-31.9523", "115.8613", "Australia/Perth"),
+        ["Sydney"] = ("-33.8688", "151.2093", "Australia/Sydney"),
+        ["Melbourne"] = ("-37.8136", "144.9631", "Australia/Melbourne"),
+        ["Brisbane"] = ("-27.4698", "153.0251", "Australia/Brisbane"),
+        ["Adelaide"] = ("-34.9285", "138.6007", "Australia/Adelaide")
     };
 
-    private static readonly Dictionary<string, (string Lat, string Lon)>
-        Cities = new()
-        {
-            ["Perth"] = ("-31.9523", "115.8613"),
-            ["Sydney"] = ("-33.8688", "151.2093"),
-            ["Melbourne"] = ("-37.8136", "144.9631"),
-            ["Brisbane"] = ("-27.4698", "153.0251"),
-            ["Adelaide"] = ("-34.9285", "138.6007")
-        };
-
+    private readonly IWeatherService _weatherService;
     private readonly ILogger<IndexModel> _logger;
 
-    public IndexModel(ILogger<IndexModel> logger)
+    public IndexModel(
+        IWeatherService weatherService,
+        ILogger<IndexModel> logger)
     {
+        _weatherService = weatherService;
         _logger = logger;
     }
 
@@ -50,12 +49,6 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        if (!ModelState.IsValid)
-        {
-            ErrorMessage = "Please select a valid location and date.";
-            return;
-        }
-
         string location = SelectedLocation ?? "Perth";
         SelectedLocation = location;
 
@@ -65,69 +58,22 @@ public class IndexModel : PageModel
             return;
         }
 
-        string url =
-            "https://api.open-meteo.com/v1/forecast" +
-            $"?latitude={city.Lat}&longitude={city.Lon}" +
-            "&daily=temperature_2m_min,temperature_2m_max," +
-            "relative_humidity_2m_mean,rain_sum,showers_sum" +
-            "&temperature_unit=celsius&precipitation_unit=mm" +
-            "&timezone=auto&forecast_days=7";
-
         try
         {
-            string json = await Client.GetStringAsync(url);
+            // Build date choices BEFORE contacting the API.
+            // They remain available even if the request fails.
+            TimeZoneInfo zone =
+                TimeZoneInfo.FindSystemTimeZoneById(city.TimeZone);
 
-            using JsonDocument document = JsonDocument.Parse(json);
+            DateOnly today = DateOnly.FromDateTime(
+                TimeZoneInfo.ConvertTime(
+                    DateTimeOffset.UtcNow, zone).DateTime);
 
-            JsonElement root = document.RootElement;
-            JsonElement daily = root.GetProperty("daily");
+            ForecastTimeZone = city.TimeZone;
 
-            ForecastTimeZone = root
-                .GetProperty("timezone")
-                .GetString();
-
-            JsonElement dates = daily.GetProperty("time");
-
-            JsonElement minimums = daily
-                .GetProperty("temperature_2m_min");
-
-            JsonElement maximums = daily
-                .GetProperty("temperature_2m_max");
-
-            JsonElement humidity = daily
-                .GetProperty("relative_humidity_2m_mean");
-
-            JsonElement rain = daily.GetProperty("rain_sum");
-
-            JsonElement showers = daily.GetProperty("showers_sum");
-
-            int count = dates.GetArrayLength();
-
-            if (count == 0 ||
-                minimums.GetArrayLength() != count ||
-                maximums.GetArrayLength() != count ||
-                humidity.GetArrayLength() != count ||
-                rain.GetArrayLength() != count ||
-                showers.GetArrayLength() != count)
+            for (int i = 0; i < 7; i++)
             {
-                throw new JsonException("Incomplete forecast response.");
-            }
-
-            var forecasts = new List<DailyForecast>();
-
-            for (int i = 0; i < count; i++)
-            {
-                DateOnly date = DateOnly.Parse(
-                    dates[i].GetString()!,
-                    CultureInfo.InvariantCulture);
-
-                forecasts.Add(new DailyForecast(
-                    location,
-                    date,
-                    minimums[i].GetDouble(),
-                    maximums[i].GetDouble(),
-                    humidity[i].GetDouble(),
-                    rain[i].GetDouble() + showers[i].GetDouble()));
+                DateOnly date = today.AddDays(i);
 
                 DateOptions.Add(new SelectListItem(
                     date.ToString(
@@ -138,30 +84,96 @@ public class IndexModel : PageModel
                         CultureInfo.InvariantCulture)));
             }
 
-            // On the first visit, use the API's first forecast date.
-            SelectedDate ??= forecasts[0].Date;
+            if (!ModelState.IsValid)
+            {
+                ErrorMessage = "Please select a valid location and date.";
+                return;
+            }
 
-            Forecast = forecasts.FirstOrDefault(
+            SelectedDate ??= today;
+
+            // Validate the requested date before making an API call.
+            if (SelectedDate.Value < today ||
+                SelectedDate.Value > today.AddDays(6))
+            {
+                ErrorMessage =
+                    "Please choose a date from the seven-day forecast list.";
+                return;
+            }
+
+            var result = await _weatherService.GetForecastsAsync(
+                location,
+                city.Lat,
+                city.Lon,
+                HttpContext.RequestAborted);
+
+            ForecastTimeZone = result.TimeZone;
+
+            Forecast = result.Forecasts.FirstOrDefault(
                 forecast => forecast.Date == SelectedDate.Value);
 
             if (Forecast is null)
             {
                 ErrorMessage =
-                    "That date is outside this city's forecast range. " +
-                    "Choose a date from the list.";
+                    "The weather provider has no forecast for that date. " +
+                    "Please choose another date.";
             }
+        }
+        catch (OperationCanceledException)
+            when (HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            // The browser cancelled the request.
+            return;
+        }
+        catch (OperationCanceledException exception)
+        {
+            _logger.LogWarning(exception, "Weather request timed out");
+
+            ErrorMessage =
+                "The weather service took too long to respond. " +
+                "Please try again shortly.";
+        }
+        catch (HttpRequestException exception)
+            when (exception.StatusCode ==
+                  HttpStatusCode.ServiceUnavailable)
+        {
+            _logger.LogWarning(
+                exception,
+                "Weather API temporarily unavailable");
+
+            ErrorMessage =
+                "The weather service is temporarily unavailable. " +
+                "Your selections are still available. Please try again later.";
+        }
+        catch (HttpRequestException exception)
+            when (exception.StatusCode ==
+                  HttpStatusCode.TooManyRequests)
+        {
+            _logger.LogWarning(
+                exception,
+                "Weather API request limit reached");
+
+            ErrorMessage =
+                "The weather service has received too many requests. " +
+                "Please wait before trying again.";
+        }
+        catch (HttpRequestException exception)
+        {
+            _logger.LogWarning(exception, "Weather HTTP request failed");
+
+            ErrorMessage =
+                "Could not contact the weather service. " +
+                "Check your connection and try again later.";
         }
         catch (Exception exception)
         {
             _logger.LogError(
                 exception,
-                "Unable to retrieve weather forecast");
+                "Unable to process weather forecast");
 
             ErrorMessage =
-                "Could not load weather data. Check your internet " +
-                "connection and try again.";
-
-            Forecast = null;
+                "Could not process the weather forecast. " +
+                "Please try again later.";
         }
     }
 }

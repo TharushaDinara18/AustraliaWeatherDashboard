@@ -2,21 +2,21 @@ using AustraliaWeatherDashboard.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Register Razor Pages.
 builder.Services.AddRazorPages();
 
-    builder.Services.AddHttpClient<WeatherService>(client =>
+// Register WeatherService as the implementation of IWeatherService.
+builder.Services.AddHttpClient<IWeatherService, WeatherService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(20);
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure error handling and HSTS outside development.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -26,7 +26,9 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+// Map static files and Razor Pages.
 app.MapStaticAssets();
+
 app.MapRazorPages()
    .WithStaticAssets();
 
