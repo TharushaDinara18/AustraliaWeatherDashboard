@@ -6,8 +6,10 @@
     ViewData["Title"] = "Weather Dashboard";
 }
 
+
 <div class="text-center mb-4">
     <h1>Australian Weather Dashboard</h1>
+
     <p class="text-muted">
         Daily forecasts retrieved from Open-Meteo
     </p>
@@ -52,12 +54,13 @@
 
 @if (Model.Forecast is { } forecast)
 {
-    <div class="text-center mb-4">
-        <h2>@forecast.Location</h2>
-        <p>@forecast.Date.ToString("dddd, dd MMMM yyyy")</p>
-        <p class="text-muted">
-            Location time zone: @Model.ForecastTimeZone
+    <div class="text-center mb-4 forecast-summary">
+        <h2 class="forecast-city">@forecast.Location</h2>
+
+        <p class="forecast-date">
+            @forecast.Date.ToString("dddd, dd MMMM yyyy")
         </p>
+
     </div>
 
     <div class="row g-3 text-center">
@@ -65,6 +68,7 @@
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
                     <h3 class="h5">Minimum temperature</h3>
+
                     <p class="display-6 mb-0">
                         @forecast.MinimumTemperatureC.ToString("0.0") °C
                     </p>
@@ -76,6 +80,7 @@
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
                     <h3 class="h5">Maximum temperature</h3>
+
                     <p class="display-6 mb-0">
                         @forecast.MaximumTemperatureC.ToString("0.0") °C
                     </p>
@@ -87,6 +92,7 @@
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
                     <h3 class="h5">Average humidity</h3>
+
                     <p class="display-6 mb-0">
                         @forecast.AverageHumidityPercent.ToString("0.0")%
                     </p>
@@ -98,9 +104,11 @@
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
                     <h3 class="h5">Forecast rainfall</h3>
+
                     <p class="display-6 mb-0">
                         @forecast.RainfallMm.ToString("0.0") mm
                     </p>
+
                     <small class="text-muted">
                         Includes rain and showers
                     </small>
@@ -110,9 +118,18 @@
     </div>
 }
 
-<p class="text-center text-muted mt-4">
-    Weather data by
-    <a href="https://open-meteo.com/" target="_blank"
-       rel="noopener noreferrer">Open-Meteo</a>.
-    Values are forecasts, not observed measurements.
-</p>
+<div class="text-center text-muted mt-4">
+    <p class="mb-1">
+        Weather data by
+        <a href="https://open-meteo.com/"
+           target="_blank"
+           rel="noopener noreferrer">
+            Open-Meteo
+        </a>.
+        Values are forecasts, not observed measurements.
+    </p>
+
+    <p class="small">
+        Recent forecasts may be reused for up to five minutes.
+    </p>
+</div>
