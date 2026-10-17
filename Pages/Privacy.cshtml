@@ -1,8 +1,50 @@
 ﻿@page
 @model PrivacyModel
-@{
-    ViewData["Title"] = "Privacy Policy";
-}
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+@{
+    ViewData["Title"] = "Privacy";
+}
+
+<div class="mt-4">
+    <h1 class="mb-4">Privacy information</h1>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="h5">City selection</h2>
+
+            <p>
+                This dashboard uses the city you select to request
+                weather forecasts. It does not require access to
+                your device's GPS location.
+            </p>
+
+            <h2 class="h5 mt-4">Weather provider</h2>
+
+            <p>
+                Forecast requests are sent to Open-Meteo using
+                the coordinates of your selected city.
+            </p>
+
+            <p>
+                You can read the provider's
+                <a href="https://open-meteo.com/en/terms"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                    terms and privacy information
+                </a>.
+            </p>
+
+            <h2 class="h5 mt-4">Temporary forecast storage</h2>
+
+            <p class="mb-0">
+                Successfully retrieved forecasts may be stored
+                temporarily in the application's memory for up
+                to five minutes to reduce repeated API requests.
+            </p>
+        </div>
+    </div>
+
+    <a asp-page="/Index" class="btn btn-primary mt-4">
+        Back to dashboard
+    </a>
+</div>
