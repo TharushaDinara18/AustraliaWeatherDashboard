@@ -50,7 +50,7 @@ public class WeatherService : IWeatherService
             "&daily=temperature_2m_min,temperature_2m_max," +
             "relative_humidity_2m_mean,rain_sum,showers_sum" +
             "&temperature_unit=celsius&precipitation_unit=mm" +
-            "&timezone=auto&forecast_days=7";
+            "&timezone=auto&forecast_days=5";
 
         string json = await DownloadForecastAsync(
             url, cancellationToken);

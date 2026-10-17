@@ -71,7 +71,7 @@ public class IndexModel : PageModel
 
             ForecastTimeZone = city.TimeZone;
 
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < 5; i++)
             {
                 DateOnly date = today.AddDays(i);
 
@@ -94,7 +94,7 @@ public class IndexModel : PageModel
 
             // Validate the requested date before making an API call.
             if (SelectedDate.Value < today ||
-                SelectedDate.Value > today.AddDays(6))
+                SelectedDate.Value > today.AddDays(4))
             {
                 ErrorMessage =
                     "Please choose a date from the seven-day forecast list.";
