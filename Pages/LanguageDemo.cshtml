@@ -1,0 +1,92 @@
+@page
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "C# Language Examples";
+
+    // Integer division removes the fractional part.
+    int humidityTotal = 64 + 65;
+    int integerAverage = humidityTotal / 2;
+    double accurateAverage = (double)humidityTotal / 2;
+
+    // Binary floating-point cannot represent every decimal exactly.
+    double doubleRainfall = 0.1 + 0.2;
+    decimal decimalRainfall = 0.1m + 0.2m;
+}
+
+<h1 class="text-center mb-4">C# Language Examples</h1>
+
+<p class="text-center text-muted mb-4">
+    Controlled examples using weather-related calculations.
+</p>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h4">1. Integer division</h2>
+
+                <p>
+                    Two humidity readings: 64% and 65%.
+                </p>
+
+                <p>
+                    Integer calculation:
+                    <strong>@integerAverage%</strong>
+                </p>
+
+                <p>
+                    Calculation after converting to double:
+                    <strong>@accurateAverage%</strong>
+                </p>
+
+                <p class="mb-0">
+                    Dividing two integers removes the fractional
+                    part. Converting an operand to double preserves
+                    the fractional result.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h4">2. Floating-point precision</h2>
+
+                <p>
+                    Adding rainfall amounts: 0.1 mm + 0.2 mm.
+                </p>
+
+                <p>
+                    Using double:
+                    <strong>
+                        @doubleRainfall.ToString("G17", CultureInfo.InvariantCulture)
+                        mm
+                    </strong>
+                </p>
+
+                <p>
+                    Using decimal:
+                    <strong>
+                        @decimalRainfall.ToString(CultureInfo.InvariantCulture)
+                        mm
+                    </strong>
+                </p>
+
+                <p class="mb-0">
+                    Double uses binary floating-point representation.
+                    Decimal represents these particular decimal
+                    values exactly.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center mt-4">
+    <a asp-page="/Index" class="btn btn-primary">
+        Back to dashboard
+    </a>
+</div>
+
