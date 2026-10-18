@@ -2,10 +2,10 @@ using AustraliaWeatherDashboard.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Register Razor Pages.
+// Enable Razor Pages
 builder.Services.AddRazorPages();
 
-// Register WeatherService as the implementation of IWeatherService.
+// Set up the weather service with a 20-second HTTP timeout
 builder.Services.AddHttpClient<IWeatherService, WeatherService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(20);
@@ -13,7 +13,7 @@ builder.Services.AddHttpClient<IWeatherService, WeatherService>(client =>
 
 var app = builder.Build();
 
-// Configure error handling and HSTS outside development.
+// Enable the error page and HSTS outside development
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -26,10 +26,11 @@ app.UseRouting();
 
 app.UseAuthorization();
 
-// Map static files and Razor Pages.
+// Make static files and Razor Pages available
 app.MapStaticAssets();
 
 app.MapRazorPages()
    .WithStaticAssets();
 
+// Start the application
 app.Run();

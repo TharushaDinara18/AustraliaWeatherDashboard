@@ -8,8 +8,10 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace AustraliaWeatherDashboard.Pages;
 
+// Handles the dashboard's selections and forecast results
 public class IndexModel : PageModel
 {
+    // Coordinates and time zones for the available cities
     private static readonly Dictionary<
         string, (string Lat, string Lon, string TimeZone)> Cities = new()
     {
@@ -31,6 +33,7 @@ public class IndexModel : PageModel
         _logger = logger;
     }
 
+    // Read the selected city and date from the URL
     [BindProperty(SupportsGet = true)]
     public string? SelectedLocation { get; set; } = "Perth";
 
@@ -52,6 +55,7 @@ public class IndexModel : PageModel
         string location = SelectedLocation ?? "Perth";
         SelectedLocation = location;
 
+        // Only allow cities listed in the dictionary
         if (!Cities.TryGetValue(location, out var city))
         {
             ErrorMessage = "Please select a city from the list.";
@@ -60,8 +64,7 @@ public class IndexModel : PageModel
 
         try
         {
-            // Build date choices BEFORE contacting the API.
-            // They remain available even if the request fails.
+            // Use today's date in the selected city's time zone
             TimeZoneInfo zone =
                 TimeZoneInfo.FindSystemTimeZoneById(city.TimeZone);
 
@@ -71,6 +74,8 @@ public class IndexModel : PageModel
 
             ForecastTimeZone = city.TimeZone;
 
+            // Build five date choices before calling the API
+            // The dropdown stays available if the API request fails
             for (int i = 0; i < 5; i++)
             {
                 DateOnly date = today.AddDays(i);
@@ -90,17 +95,19 @@ public class IndexModel : PageModel
                 return;
             }
 
+            // Use today when no date has been selected
             SelectedDate ??= today;
 
-            // Validate the requested date before making an API call.
+            // Reject dates outside the five-day forecast range
             if (SelectedDate.Value < today ||
                 SelectedDate.Value > today.AddDays(4))
             {
                 ErrorMessage =
-                    "Please choose a date from the seven-day forecast list.";
+                    "Please choose a date from the five-day forecast list.";
                 return;
             }
 
+            // Ask the weather service for this city's forecasts
             var result = await _weatherService.GetForecastsAsync(
                 location,
                 city.Lat,
@@ -109,6 +116,7 @@ public class IndexModel : PageModel
 
             ForecastTimeZone = result.TimeZone;
 
+            // Find the forecast that matches the selected date
             Forecast = result.Forecasts.FirstOrDefault(
                 forecast => forecast.Date == SelectedDate.Value);
 
@@ -122,7 +130,7 @@ public class IndexModel : PageModel
         catch (OperationCanceledException)
             when (HttpContext.RequestAborted.IsCancellationRequested)
         {
-            // The browser cancelled the request.
+            // Stop processing if the browser cancels the request
             return;
         }
         catch (OperationCanceledException exception)
@@ -167,6 +175,7 @@ public class IndexModel : PageModel
         }
         catch (Exception exception)
         {
+            // Log unexpected errors and show a message on the page
             _logger.LogError(
                 exception,
                 "Unable to process weather forecast");

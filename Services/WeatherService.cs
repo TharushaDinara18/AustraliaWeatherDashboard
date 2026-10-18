@@ -6,11 +6,12 @@ using AustraliaWeatherDashboard.Models;
 
 namespace AustraliaWeatherDashboard.Services;
 
+// Gets weather forecasts and caches them for five minutes
 public class WeatherService : IWeatherService
 {
     private readonly HttpClient _httpClient;
 
-    // Shared across service instances within this running application.
+    // Share cached forecasts while the application is running
     private static readonly ConcurrentDictionary<string, CacheEntry>
         Cache = new();
 
@@ -33,24 +34,32 @@ public class WeatherService : IWeatherService
     {
         string cacheKey = $"{location}|{latitude}|{longitude}";
 
-        // Reuse a recent successful response for this location.
+        // Use cached data if it has not expired and starts with today
         if (Cache.TryGetValue(cacheKey, out var cached) &&
             cached.ExpiresAt > DateTimeOffset.UtcNow &&
             cached.Forecasts[0].Date == GetLocalToday(cached.TimeZone))
         {
-            // Return a separate list so callers cannot alter the cache.
+            // Return a copy to protect the cached list
             return (new List<DailyForecast>(cached.Forecasts),
                 cached.TimeZone);
         }
 
+        // Request five days of weather data from Open-Meteo
         string url =
             "https://api.open-meteo.com/v1/forecast" +
+
             $"?latitude={Uri.EscapeDataString(latitude)}" +
+
             $"&longitude={Uri.EscapeDataString(longitude)}" +
+
             "&daily=temperature_2m_min,temperature_2m_max," +
+
             "relative_humidity_2m_mean,rain_sum,showers_sum" +
+
             "&temperature_unit=celsius&precipitation_unit=mm" +
+
             "&timezone=auto&forecast_days=5";
+
 
         string json = await DownloadForecastAsync(
             url, cancellationToken);
@@ -63,17 +72,19 @@ public class WeatherService : IWeatherService
         string timeZone = root.GetProperty("timezone").GetString()
             ?? throw new JsonException("Missing forecast time zone.");
 
+        // Read the daily values from the JSON response
         JsonElement dates = daily.GetProperty("time");
         JsonElement minimums = daily.GetProperty("temperature_2m_min");
         JsonElement maximums = daily.GetProperty("temperature_2m_max");
         JsonElement humidity =
             daily.GetProperty("relative_humidity_2m_mean");
+
         JsonElement rain = daily.GetProperty("rain_sum");
         JsonElement showers = daily.GetProperty("showers_sum");
 
         int count = dates.GetArrayLength();
 
-        // All arrays must describe the same number of forecast days.
+        // Check that every array has the same number of days
         if (count == 0 ||
             minimums.GetArrayLength() != count ||
             maximums.GetArrayLength() != count ||
@@ -86,6 +97,7 @@ public class WeatherService : IWeatherService
 
         var forecasts = new List<DailyForecast>();
 
+        // Create one forecast object for each date
         for (int i = 0; i < count; i++)
         {
             DateOnly date = DateOnly.ParseExact(
@@ -94,6 +106,7 @@ public class WeatherService : IWeatherService
                 "yyyy-MM-dd",
                 CultureInfo.InvariantCulture);
 
+            // Rainfall includes both rain and showers
             forecasts.Add(new DailyForecast(
                 location,
                 date,
@@ -103,7 +116,7 @@ public class WeatherService : IWeatherService
                 rain[i].GetDouble() + showers[i].GetDouble()));
         }
 
-        // Only cache responses after they have been processed successfully.
+        // Save the successful forecasts for five minutes
         Cache[cacheKey] = new CacheEntry(
             DateTimeOffset.UtcNow.AddMinutes(5),
             timeZone,
@@ -116,19 +129,20 @@ public class WeatherService : IWeatherService
         string url,
         CancellationToken cancellationToken)
     {
-        // Make at most two attempts: the original request and one retry.
+        // Allow the first request and one retry.
         for (int attempt = 0; attempt < 2; attempt++)
         {
             using HttpResponseMessage response =
                 await _httpClient.GetAsync(url, cancellationToken);
 
+            // Retry once if the API returns HTTP 503.
             if (response.StatusCode ==
                     HttpStatusCode.ServiceUnavailable &&
                 attempt == 0)
             {
                 TimeSpan delay = TimeSpan.FromSeconds(2);
 
-                // Respect the server's Retry-After instruction, if supplied.
+                // Use the API's suggested waiting time if provided
                 var retryAfter = response.Headers.RetryAfter;
 
                 if (retryAfter?.Delta is TimeSpan specifiedDelay)
@@ -145,8 +159,7 @@ public class WeatherService : IWeatherService
                     delay = TimeSpan.Zero;
                 }
 
-                // If a longer wait is requested, return the error to the
-                // page instead of retrying earlier than the server allows.
+                // Only retry when the wait is ten seconds or less
                 if (delay <= TimeSpan.FromSeconds(10))
                 {
                     await Task.Delay(delay, cancellationToken);
@@ -154,6 +167,7 @@ public class WeatherService : IWeatherService
                 }
             }
 
+            // Throw an exception if the request was unsuccessful
             response.EnsureSuccessStatusCode();
 
             return await response.Content.ReadAsStringAsync(
@@ -168,6 +182,7 @@ public class WeatherService : IWeatherService
 
     private static DateOnly GetLocalToday(string timeZone)
     {
+        // Find today's date in the forecast location's time zone
         TimeZoneInfo zone =
             TimeZoneInfo.FindSystemTimeZoneById(timeZone);
 
